@@ -1,0 +1,21 @@
+{
+  "name": "ecommerce-microservices",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "dev": "echo 'Run individual services'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.5.4"
+  }
+}
