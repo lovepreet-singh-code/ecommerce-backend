@@ -1,29 +1,30 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  mongodb:
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "5002:5001"
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      - MONGO_URI=mongodb://mongo:27017/user-service
+      - JWT_SECRET=supersecret
+    depends_on:
+      - mongo
+
+  mongo:
     image: mongo:6
-    container_name: mongo_db
-    restart: always
+    container_name: mongo
+    restart: unless-stopped
     ports:
-      - '27017:27017'
+      - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-
-  redis:
-    image: redis:7
-    container_name: redis_cache
-    restart: always
-    ports:
-      - '6379:6379'
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq_broker
-    restart: always
-    ports:
-      - '5672:5672'
-      - '15672:15672' # RabbitMQ Dashboard
+      - mongo-data:/data/db
 
 volumes:
-  mongo_data:
+  mongo-data:

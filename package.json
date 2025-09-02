@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint . --ext .ts",
-    "format": "prettier --write .",
-    "dev": "echo 'Run individual services'"
+    "dev": "docker-compose up --build",
+    "down": "docker-compose down",
+    "build": "docker-compose build"
   },
   "keywords": [],
   "author": "",
