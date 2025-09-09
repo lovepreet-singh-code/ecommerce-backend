@@ -7,17 +7,11 @@ interface CustomError extends Error {
 }
 
 // Global Error Handler Middleware
-export const errorHandler = (
-  err: CustomError,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const errorHandler = (err: CustomError, req: Request, res: Response, next: NextFunction) => {
   console.error("🔥 Error:", err);
 
   const statusCode = err.statusCode || 500;
-  const message =
-    err.message || "Something went wrong. Please try again later.";
+  const message = err.message || "Something went wrong. Please try again later.";
 
   res.status(statusCode).json({
     success: false,

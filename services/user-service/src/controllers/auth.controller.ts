@@ -1,15 +1,26 @@
 import { Request, Response } from "express";
-import { User } from "../models/user.model";
+import User, { IUser } from "../models/user.model";
 import { hashPassword, comparePassword } from "../utils/password";
 import { signJWT } from "../utils/jwt";
 import { asyncHandler } from "../utils/asyncHandler";
 import { StatusCodes } from "../constants/statusCodes";
 import { Messages } from "../constants/messages";
-import crypto from "crypto"; 
+import crypto from "crypto";
 
-
+// ========================
+// ✅ Register
+// ========================
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const name = req.body.name?.trim();
+  const email = req.body.email?.trim();
+  const password = req.body.password?.trim();
+  const role = req.body.role?.trim() || "user";
+
+  if (!name || !email || !password) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: Messages.BOTH_FIELDS_REQUIRED });
+  }
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -19,23 +30,43 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const hashed = await hashPassword(password);
-  const user = await User.create({ name, email, password: hashed });
+  const user = await User.create({ name, email, password: hashed, role });
 
-  res
-    .status(StatusCodes.CREATED)
-    .json({ message: Messages.USER_CREATED, user });
+  const userId = user._id.toString(); // ✅ cast _id to string
+
+  res.status(StatusCodes.CREATED).json({
+    message: Messages.USER_CREATED,
+    user: {
+      id: userId,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
 });
 
+// ========================
+// ✅ Login
+// ========================
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const email = req.body.email?.trim();
+  const password = req.body.password?.trim();
 
-  const user = await User.findOne({ email });
+  if (!email || !password) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: Messages.BOTH_FIELDS_REQUIRED });
+  }
+
+  // 🔍 check user existence
+  const user = (await User.findOne({ email })) as IUser | null;
   if (!user) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: Messages.INVALID_CREDENTIALS });
   }
 
+  // 🔍 check password match
   const isMatch = await comparePassword(password, user.password);
   if (!isMatch) {
     return res
@@ -43,16 +74,30 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       .json({ message: Messages.INVALID_CREDENTIALS });
   }
 
-  const token = signJWT({ id: user._id, email: user.email });
-  res.status(StatusCodes.OK).json({ token });
+  // ✅ convert ObjectId to string for JWT
+  const userId = user._id.toString();
+  const tokenPayload = { id: userId, email: user.email, role: user.role };
+  const token = signJWT(tokenPayload);
+
+  // 🟢 success response
+  return res.status(StatusCodes.OK).json({
+    message: Messages.LOGIN_SUCCESS,
+    token,
+    user: {
+      id: userId,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
 });
 
-
+// ========================
 // ✅ Forgot Password
+// ========================
 export const forgotPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    const { email } = req.body;
-
+    const email = req.body.email?.trim();
     if (!email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -66,26 +111,27 @@ export const forgotPassword = asyncHandler(
         .json({ message: Messages.USER_NOT_FOUND });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex"); // ✅ ab error nahi aayega
-    const resetTokenExpire = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpire = new Date(Date.now() + 15 * 60 * 1000);
 
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = resetTokenExpire;
+    user.resetPasswordExpires = resetTokenExpire; // ✅ fixed
     await user.save();
 
-    // TODO: send email using nodemailer
     res.status(StatusCodes.OK).json({
       message: Messages.RESET_TOKEN_SENT,
-      resetToken, // ⚠️ testing ke liye, baad me hata dena
+      resetToken, // ⚠️ remove in production
     });
   }
 );
 
+// ========================
 // ✅ Reset Password
+// ========================
 export const resetPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    const { token, newPassword } = req.body;
+    const token = req.body.token?.trim();
+    const newPassword = req.body.newPassword?.trim();
 
     if (!token || !newPassword) {
       return res
@@ -95,7 +141,7 @@ export const resetPassword = asyncHandler(
 
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpire: { $gt: new Date() },
+      resetPasswordExpires: { $gt: new Date() }, // ✅ fixed
     });
 
     if (!user) {
@@ -106,10 +152,9 @@ export const resetPassword = asyncHandler(
 
     user.password = await hashPassword(newPassword);
     user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    user.resetPasswordExpires = undefined; // ✅ fixed
     await user.save();
 
     res.status(StatusCodes.OK).json({ message: Messages.PASSWORD_RESET });
   }
 );
-

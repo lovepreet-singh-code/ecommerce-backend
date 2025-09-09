@@ -3,7 +3,8 @@ export const Messages = {
   EMAIL_EXISTS: "Email already exists",
   INVALID_CREDENTIALS: "Invalid credentials",
   ROUTE_NOT_FOUND: "Route not found",
-
+  LOGIN_SUCCESS: "Login successful",
+   BOTH_FIELDS_REQUIRED: "Both email and password are required", 
   // User related
   USER_NOT_FOUND: "User not found",
   BOTH_PASSWORDS_REQUIRED: "Both old and new passwords are required",

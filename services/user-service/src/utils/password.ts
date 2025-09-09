@@ -1,3 +1,4 @@
+// src/utils/password.ts
 import bcrypt from "bcryptjs";
 
 export const hashPassword = async (password: string): Promise<string> => {
@@ -6,8 +7,8 @@ export const hashPassword = async (password: string): Promise<string> => {
 };
 
 export const comparePassword = async (
-  password: string,
-  hash: string,
+  plainPassword: string,
+  hashedPassword: string
 ): Promise<boolean> => {
-  return bcrypt.compare(password, hash);
+  return bcrypt.compare(plainPassword, hashedPassword);
 };
